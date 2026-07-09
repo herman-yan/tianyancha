@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天眼查企业查询平台 - 登录</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <svg viewBox="0 0 48 48" width="48" height="48">
+                        <circle cx="24" cy="24" r="22" fill="#e74c3c" stroke="none"/>
+                        <circle cx="24" cy="20" r="8" fill="white" stroke="none"/>
+                        <line x1="24" y1="28" x2="24" y2="40" stroke="white" stroke-width="3"/>
+                        <line x1="18" y1="34" x2="24" y2="28" stroke="white" stroke-width="2.5"/>
+                        <line x1="30" y1="34" x2="24" y2="28" stroke="white" stroke-width="2.5"/>
+                    </svg>
+                </div>
+                <h1>天眼查企业查询平台</h1>
+                <p class="login-subtitle">覆盖 160+ 项企业数据维度，一站式商业情报分析</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" fill="currentColor"/>
+                        </svg>
+                        <input type="text" id="username" name="username" placeholder="请输入用户名" required autocomplete="username">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M18 8h-1V6c0-2.8-2.2-5-5-5S7 3.2 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7 1.4-3.1 3.1-3.1s3.1 1.4 3.1 3.1v2z" fill="currentColor"/>
+                        </svg>
+                        <input type="password" id="password" name="password" placeholder="请输入密码" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div id="loginError" class="error-message" style="display:none;"></div>
+                <button type="submit" class="btn-primary" id="loginBtn">
+                    <span>登录</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" width="16" height="16">
+                        <path d="M12 4l-1.4 1.4L16.2 11H4v2h12.2l-5.6 5.6L12 20l8-8z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </form>
+            <div class="login-footer">
+                <p>数据来源：天眼查 | 本平台仅供内部团队使用</p>
+            </div>
+        </div>
+        <div class="login-decoration">
+            <div class="floating-card card-1">工商登记</div>
+            <div class="floating-card card-2">股权结构</div>
+            <div class="floating-card card-3">司法风险</div>
+            <div class="floating-card card-4">知识产权</div>
+            <div class="floating-card card-5">董监高</div>
+            <div class="floating-card card-6">经营数据</div>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+</body>
+</html>

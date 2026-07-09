@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天眼查企业查询平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+</head>
+<body class="dashboard-body">
+    <!-- 顶部导航 -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <svg viewBox="0 0 48 48" width="32" height="32">
+                <circle cx="24" cy="24" r="22" fill="#e74c3c" stroke="none"/>
+                <circle cx="24" cy="20" r="8" fill="white" stroke="none"/>
+                <line x1="24" y1="28" x2="24" y2="40" stroke="white" stroke-width="3"/>
+                <line x1="18" y1="34" x2="24" y2="28" stroke="white" stroke-width="2.5"/>
+                <line x1="30" y1="34" x2="24" y2="28" stroke="white" stroke-width="2.5"/>
+            </svg>
+            <span class="brand-text">天眼查企业查询平台</span>
+        </div>
+        <div class="nav-user">
+            <span id="currentUser" class="user-name"></span>
+            <button id="logoutBtn" class="btn-logout">退出登录</button>
+        </div>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 搜索区 -->
+        <section class="search-section">
+            <div class="search-container">
+                <h2 class="search-title">查询企业信息</h2>
+                <p class="search-desc">输入企业名称、简称或统一社会信用代码，快速获取全面商业情报</p>
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="请输入企业名称，如：腾讯、比亚迪、华为..." autocomplete="off">
+                        <button id="searchBtn" class="btn-search">查询</button>
+                    </div>
+                    <div id="searchSuggestions" class="search-suggestions" style="display:none;"></div>
+                </div>
+                <!-- 快捷查询标签 -->
+                <div class="quick-tags">
+                    <span class="quick-label">热门查询：</span>
+                    <button class="tag-btn" data-query="腾讯科技">腾讯科技</button>
+                    <button class="tag-btn" data-query="阿里巴巴">阿里巴巴</button>
+                    <button class="tag-btn" data-query="比亚迪">比亚迪</button>
+                    <button class="tag-btn" data-query="华为技术">华为技术</button>
+                    <button class="tag-btn" data-query="字节跳动">字节跳动</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 搜索结果列表 -->
+        <section id="searchResults" class="results-section" style="display:none;">
+            <div class="results-header">
+                <h3>搜索结果</h3>
+                <span id="resultCount" class="result-count"></span>
+            </div>
+            <div id="resultsList" class="results-list"></div>
+        </section>
+
+        <!-- 企业详情 -->
+        <section id="companyDetail" class="detail-section" style="display:none;">
+            <div class="detail-header">
+                <div class="detail-company-info">
+                    <h2 id="detailCompanyName"></h2>
+                    <div class="detail-meta">
+                        <span id="detailStatus" class="status-badge"></span>
+                        <span id="detailRegDate"></span>
+                        <span id="detailRegCapital"></span>
+                    </div>
+                </div>
+                <button id="backToResults" class="btn-back">返回列表</button>
+            </div>
+
+            <!-- 信息维度标签 -->
+            <div class="dimension-tabs">
+                <button class="dim-tab active" data-dim="basic">基本工商</button>
+                <button class="dim-tab" data-dim="shareholder">股东结构</button>
+                <button class="dim-tab" data-dim="risk">司法风险</button>
+                <button class="dim-tab" data-dim="people">董监高</button>
+                <button class="dim-tab" data-dim="ip">知识产权</button>
+                <button class="dim-tab" data-dim="operation">经营数据</button>
+            </div>
+
+            <!-- 详情内容 -->
+            <div id="detailContent" class="detail-content">
+                <div class="loading-placeholder">
+                    <div class="spinner"></div>
+                    <p>正在加载企业信息...</p>
+                </div>
+            </div>
+
+            <!-- 数据来源标注 -->
+            <div class="data-source">
+                <p>数据来源：天眼查（实时同步自工商系统）</p>
+            </div>
+        </section>
+
+        <!-- 空状态 -->
+        <section id="emptyState" class="empty-section">
+            <div class="empty-container">
+                <svg viewBox="0 0 120 120" width="120" height="120" class="empty-icon">
+                    <circle cx="60" cy="50" r="30" fill="none" stroke="#ddd" stroke-width="3"/>
+                    <line x1="82" y1="72" x2="110" y2="100" stroke="#ddd" stroke-width="4" stroke-linecap="round"/>
+                    <rect x="40" y="85" width="40" height="8" rx="4" fill="#eee"/>
+                    <rect x="35" y="97" width="50" height="6" rx="3" fill="#eee"/>
+                </svg>
+                <h3>输入企业名称开始查询</h3>
+                <p>支持企业全称、简称、品牌名或统一社会信用代码检索</p>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">🏢</div>
+                        <div class="feature-text">工商登记</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📊</div>
+                        <div class="feature-text">股权结构</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">⚖️</div>
+                        <div class="feature-text">司法风险</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">👨‍💼</div>
+                        <div class="feature-text">董监高</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">📋</div>
+                        <div class="feature-text">知识产权</div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon">💰</div>
+                        <div class="feature-text">经营数据</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="page-footer">
+        <p>天眼查企业查询平台 &copy; 2026 | 数据来源：天眼查 | 仅供内部团队使用</p>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
