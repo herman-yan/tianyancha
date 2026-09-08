@@ -6,9 +6,10 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const tycClient = require('./tyc-client');
 
-// 加载环境变量
+// 加载环境变量（兼容 .env 文件与容器环境变量）
 let envConfig = {};
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
@@ -22,13 +23,61 @@ if (fs.existsSync(envPath)) {
         }
     });
 }
+// 容器/系统环境变量优先
+const get = (key, fallback) => process.env[key] || envConfig[key] || fallback;
 
-const PORT = envConfig.PORT || 3000;
-const API_KEY = envConfig.TIANYANCHA_API_KEY || '';
+const PORT = parseInt(get('PORT', '3000'), 10);
+const API_KEY = get('TIANYANCHA_API_KEY', '');
+const SESSION_TIMEOUT_HOURS = parseInt(get('SESSION_TIMEOUT_HOURS', '24'), 10);
 
 // 设置 API Key
 if (API_KEY) {
     tycClient.setApiKey(API_KEY);
+}
+
+// ============ 用户与会话 ============
+// 默认共享账户（可在 .env 中覆盖密码）。这是内部团队工具，密码以明文保存在内存中。
+const DEFAULT_USERS = [
+    { username: 'admin', password: get('ADMIN_PASSWORD', 'admin123'), role: 'admin', displayName: '管理员' },
+    { username: 'guest', password: get('GUEST_PASSWORD', 'guest123'), role: 'guest', displayName: '访客' }
+];
+
+// token -> { username, role, displayName, createdAt }
+const sessions = new Map();
+
+function createToken(user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    sessions.set(token, {
+        username: user.username,
+        role: user.role,
+        displayName: user.displayName,
+        createdAt: Date.now()
+    });
+    return token;
+}
+
+// 定期清理过期会话
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, info] of sessions.entries()) {
+        if (now - info.createdAt > SESSION_TIMEOUT_HOURS * 60 * 60 * 1000) {
+            sessions.delete(token);
+        }
+    }
+}, 60 * 60 * 1000).unref();
+
+// 校验请求中的 token
+function requireAuth(req, res, next) {
+    const header = req.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : (req.query.token || '');
+    const session = token ? sessions.get(token) : null;
+    if (!session) {
+        return res.status(401).json({ message: '未登录或登录已过期，请重新登录' });
+    }
+    // 续期：更新创建时间
+    session.createdAt = Date.now();
+    req.user = session;
+    next();
 }
 
 const app = express();
@@ -38,25 +87,55 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// 简易认证中间件
-function authMiddleware(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    // 简单 token 验证（前端 localStorage 中存储的 auth 信息）
-    // 对于共享平台，使用简单的 cookie/session 验证
-    const token = authHeader || req.query.token;
-    if (!token) {
-        // 允许未认证请求访问页面，但 API 调用需要认证
-        // 简化处理：允许所有请求（前端有自己的登录逻辑）
+// ============ 登录相关接口 ============
+
+// 登录
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+        return res.status(400).json({ message: '请输入用户名和密码' });
     }
-    next();
-}
+    const user = DEFAULT_USERS.find(u => u.username === username && u.password === password);
+    if (!user) {
+        return res.status(401).json({ message: '用户名或密码错误' });
+    }
+    const token = createToken(user);
+    res.json({
+        success: true,
+        token,
+        user: {
+            username: user.username,
+            role: user.role,
+            displayName: user.displayName
+        }
+    });
+});
 
-app.use(authMiddleware);
+// 退出登录
+app.post('/api/logout', (req, res) => {
+    const header = req.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+    if (token) sessions.delete(token);
+    res.json({ success: true });
+});
 
-// ============ API 路由 ============
+// API Key 状态检查（公开，供前端判断）
+app.get('/api/status', (req, res) => {
+    res.json({
+        configured: !!API_KEY,
+        message: API_KEY ? '天眼查 API 已配置' : '天眼查 API Key 未配置，请在 .env 文件中设置'
+    });
+});
+
+// 健康检查（供 Docker / 负载均衡探活）
+app.get('/healthz', (req, res) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+// ============ 受保护的数据接口 ============
 
 // 搜索企业
-app.post('/api/search', async (req, res) => {
+app.post('/api/search', requireAuth, async (req, res) => {
     try {
         const { keyword } = req.body;
         if (!keyword) {
@@ -78,7 +157,7 @@ app.post('/api/search', async (req, res) => {
 });
 
 // 获取企业基本画像
-app.post('/api/profile/basic', async (req, res) => {
+app.post('/api/profile/basic', requireAuth, async (req, res) => {
     try {
         const { companyId, companyName } = req.body;
         if (!companyId && !companyName) {
@@ -100,7 +179,7 @@ app.post('/api/profile/basic', async (req, res) => {
 });
 
 // 获取企业维度数据
-app.post('/api/profile/dimension', async (req, res) => {
+app.post('/api/profile/dimension', requireAuth, async (req, res) => {
     try {
         const { companyId, companyName, dimension } = req.body;
         if (!companyId && !companyName) {
@@ -166,7 +245,7 @@ app.post('/api/profile/dimension', async (req, res) => {
 });
 
 // 获取企业能力列表
-app.post('/api/capabilities', async (req, res) => {
+app.post('/api/capabilities', requireAuth, async (req, res) => {
     try {
         const { companyId, companyName } = req.body;
         if (!companyId && !companyName) {
@@ -185,14 +264,6 @@ app.post('/api/capabilities', async (req, res) => {
         console.error('获取能力列表失败:', error);
         res.status(500).json({ message: error.message || '服务暂时不可用' });
     }
-});
-
-// API Key 状态检查
-app.get('/api/status', (req, res) => {
-    res.json({
-        configured: !!API_KEY,
-        message: API_KEY ? '天眼查 API 已配置' : '天眼查 API Key 未配置，请在 .env 文件中设置'
-    });
 });
 
 // ============ 数据格式化 ============
@@ -330,12 +401,12 @@ function formatDimensionData(dimension, data) {
 
 // ============ 启动服务 ============
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🔍 天眼查企业查询平台已启动`);
-    console.log(`   访问地址: http://localhost:${PORT}`);
+    console.log(`   访问地址: http://0.0.0.0:${PORT}`);
     console.log(`   API Key: ${API_KEY ? '已配置 ✓' : '未配置 ✗（请在 .env 中设置 TIANYANCHA_API_KEY）'}`);
-    console.log(`\n   默认登录账户:`);
-    console.log(`   管理员: admin / admin123`);
-    console.log(`   访客:   guest / guest123`);
+    console.log(`   默认登录账户:`);
+    console.log(`   管理员: admin / ${get('ADMIN_PASSWORD', 'admin123')}`);
+    console.log(`   访客:   guest / ${get('GUEST_PASSWORD', 'guest123')}`);
     console.log(`\n`);
 });

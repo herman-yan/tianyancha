@@ -1,6 +1,6 @@
 /**
  * 天眼查企业查询平台 - API 模块
- * 与后端服务通信，获取天眼查数据
+ * 与后端服务通信，所有请求自动携带登录 token。
  */
 
 const API_BASE = window.location.origin + '/api';
@@ -11,114 +11,52 @@ class TYCApi {
         this.companyId = null;
     }
 
-    /**
-     * 搜索企业
-     * @param {string} keyword - 搜索关键词
-     * @returns {Promise} 搜索结果
-     */
+    // 统一请求方法：自动附带 token，401 时跳转登录
+    async request(path, body) {
+        const token = typeof getToken === 'function' ? getToken() : null;
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const response = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body)
+        });
+
+        if (response.status === 401) {
+            // 会话失效，清理并跳回登录页
+            if (typeof logout === 'function') logout();
+            throw new Error('登录已过期，请重新登录');
+        }
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || '请求失败');
+        }
+        return response.json();
+    }
+
     async searchCompanies(keyword) {
-        try {
-            const response = await fetch(`${API_BASE}/search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '搜索失败');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('搜索企业失败:', error);
-            throw error;
-        }
+        return this.request('/search', { keyword });
     }
 
-    /**
-     * 获取企业基本画像
-     * @param {string} companyId - 企业ID
-     * @param {string} companyName - 企业名称
-     */
     async getBasicProfile(companyId, companyName) {
-        try {
-            const response = await fetch(`${API_BASE}/profile/basic`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ companyId, companyName })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '获取基本信息失败');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('获取基本信息失败:', error);
-            throw error;
-        }
+        return this.request('/profile/basic', { companyId, companyName });
     }
 
-    /**
-     * 获取企业维度数据
-     * @param {string} companyId - 企业ID
-     * @param {string} companyName - 企业名称
-     * @param {string} dimension - 数据维度
-     */
     async getDimensionData(companyId, companyName, dimension) {
-        try {
-            const response = await fetch(`${API_BASE}/profile/dimension`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ companyId, companyName, dimension })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '获取维度数据失败');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('获取维度数据失败:', error);
-            throw error;
-        }
+        return this.request('/profile/dimension', { companyId, companyName, dimension });
     }
 
-    /**
-     * 获取企业可用能力列表
-     * @param {string} companyId
-     * @param {string} companyName
-     */
     async getCapabilities(companyId, companyName) {
-        try {
-            const response = await fetch(`${API_BASE}/capabilities`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ companyId, companyName })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || '获取能力列表失败');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('获取能力列表失败:', error);
-            throw error;
-        }
+        return this.request('/capabilities', { companyId, companyName });
     }
 
-    // 设置当前企业
     setCurrentCompany(companyId, companyName) {
         this.currentCompany = companyName;
         this.companyId = companyId;
     }
 
-    // 获取当前企业
     getCurrentCompany() {
         return { companyId: this.companyId, companyName: this.currentCompany };
     }

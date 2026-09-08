@@ -1,0 +1,29 @@
+# 天眼查企业查询平台 - systemd 服务文件
+# 适用场景：不使用 Docker，直接在云服务器上以 Node 进程常驻运行。
+#
+# 使用方法：
+#   1. 将本文件复制到 /etc/systemd/system/tyc-query.service
+#   2. 修改 WorkingDirectory / ExecStart 中的路径为你实际的部署路径
+#   3. 提前装好依赖：cd /opt/tyc-query/server && npm install --omit=dev
+#   4. 创建 /opt/tyc-query/server/.env（参考 server/.env.example）
+#   5. 执行：
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now tyc-query
+#   6. 查看状态： sudo systemctl status tyc-query
+
+[Unit]
+Description=天眼查企业查询平台
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tyc-query/server
+ExecStart=/usr/bin/node /opt/tyc-query/server/index.js
+Restart=always
+RestartSec=3
+Environment=PORT=3000
+# 如需指定运行用户，取消下面一行的注释并改为你的用户名
+# User=www-data
+
+[Install]
+WantedBy=multi-user.target

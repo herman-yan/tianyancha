@@ -1,0 +1,18 @@
+services:
+  tyc-query:
+    build: .
+    image: tyc-query:latest
+    container_name: tyc-query
+    ports:
+      - "3000:3000"
+    env_file:
+      - server/.env
+    environment:
+      - PORT=3000
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
