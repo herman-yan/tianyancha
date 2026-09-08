@@ -1,0 +1,20 @@
+# Render Blueprint 配置 —— 连接 GitHub 仓库后“一键部署”
+# 文档：https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: tyc-enterprise-query
+    runtime: node
+    rootDir: server          # 应用代码在 server/ 目录
+    plan: free               # 免费套餐，无需购买云服务器
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TIANYANCHA_API_KEY
+        sync: false          # 部署时由你填入天眼查密钥（留空也能跑，只是查询会提示未配置）
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GUEST_PASSWORD
+        sync: false

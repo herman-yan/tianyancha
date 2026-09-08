@@ -4,6 +4,8 @@
 
 > 仓库地址：https://github.com/herman-yan/tianyancha
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/herman-yan/tianyancha)
+
 ## 功能覆盖
 
 | 维度 | 包含信息 |
@@ -80,6 +82,25 @@ sudo cp tyc-query.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now tyc-query
 ```
+
+### 方式 D：Render 免费托管（无需购买云服务器，推荐）
+
+不想买服务器也能让团队访问。Render 是免费网站托管平台，能直接读取本 GitHub 仓库并自动运行后台，给你一个公开网址（如 `https://tyc-enterprise-query.onrender.com`）。
+
+**准备（1 分钟）**：去 https://ai.tianyancha.com 注册拿到 API Key（可选，没有也能先把网站跑起来）。
+
+**一键部署步骤**：
+
+1. 打开链接：[Deploy to Render](https://render.com/deploy?repo=https://github.com/herman-yan/tianyancha)
+2. 用 **GitHub 账号登录** Render（首次会请求授权，允许即可）
+3. 在配置页填写环境变量：
+   - `TIANYANCHA_API_KEY`：填入你的天眼查密钥（留空则网站可登录但查询提示“未配置”）
+   - `ADMIN_PASSWORD` / `GUEST_PASSWORD`：可选，覆盖默认密码
+4. 点击 **Create Web Service**，等待约 1–2 分钟构建完成
+
+完成后 Render 会显示一个网址，把它发给团队成员，大家打开即可登录查询。
+
+> 说明：Render 免费套餐在无访问约 15 分钟后会进入休眠，下次打开需等待十几秒自动唤醒，适合临时/低频共享使用。
 
 ## 三、让外网能访问（云服务器必做）
 
